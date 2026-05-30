@@ -92,3 +92,4 @@ O projeto utiliza **Scrum** com suporte visual do **Kanban**:
 ## Integração Contínua
 
 O pipeline executa os testes automaticamente a cada push nas branches `main` e `dev`, garantindo que nenhuma alteração quebre funcionalidades existentes.
+//docs atualizados
