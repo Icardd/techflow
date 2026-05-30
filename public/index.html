@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskFlow — Gerenciador de Tarefas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f0f2f5;
+      --white:     #ffffff;
+      --border:    #e2e6ea;
+      --accent:    #2563eb;
+      --accent-lt: #eff6ff;
+      --success:   #16a34a;
+      --success-lt:#f0fdf4;
+      --warning:   #d97706;
+      --warning-lt:#fffbeb;
+      --danger:    #dc2626;
+      --danger-lt: #fef2f2;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --sans:      'Inter', sans-serif;
+      --radius:    8px;
+      --shadow:    0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07);
+    }
+
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-md);
+    }
+    .logo { font-size: 17px; font-weight: 700; }
+    .logo span { opacity: .65; font-weight: 400; font-size: 13px; margin-left: 8px; }
+    .btn-header {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-header:hover { background: rgba(255,255,255,.25); }
+
+    main { max-width: 860px; margin: 0 auto; padding: 28px 20px; }
+
+    /* ── Resumo ── */
+    .resumo { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+    .resumo-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .r-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 6px; }
+    .r-num   { font-size: 30px; font-weight: 700; line-height: 1; }
+    .r-and  .r-num { color: var(--warning); }
+    .r-fin  .r-num { color: var(--success); }
+    .r-alta .r-num { color: var(--danger); }
+
+    /* ── Filtros ── */
+    .painel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .painel-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-right: 4px; }
+    .chip {
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip.ativo { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .chip.c-alta.ativo  { background: var(--danger);  border-color: var(--danger); }
+    .chip.c-media.ativo { background: var(--warning); border-color: var(--warning); }
+    .chip.c-baixa.ativo { background: var(--success); border-color: var(--success); }
+
+    /* ── Lista ── */
+    #lista { display: flex; flex-direction: column; gap: 8px; }
+
+    .tarefa-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: var(--shadow);
+      transition: box-shadow .15s, transform .15s;
+      animation: entrar .2s ease;
+    }
+    @keyframes entrar { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+    .tarefa-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .tarefa-card.p-alta  { border-left-color: var(--danger); }
+    .tarefa-card.p-media { border-left-color: var(--warning); }
+    .tarefa-card.p-baixa { border-left-color: var(--success); }
+    .tarefa-card.finalizada { opacity: .55; }
+
+    .tarefa-corpo { flex: 1; min-width: 0; }
+    .tarefa-titulo {
+      font-size: 14px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tarefa-card.finalizada .tarefa-titulo { text-decoration: line-through; color: var(--muted); }
+    .tarefa-sub { display: flex; gap: 8px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
+    .tarefa-desc { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+
+    .tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .3px; }
+    .tag-aberta       { background: #f1f5f9; color: var(--muted); }
+    .tag-em_andamento { background: var(--warning-lt); color: var(--warning); }
+    .tag-finalizada   { background: var(--success-lt); color: var(--success); }
+    .tag-alta  { background: var(--danger-lt);  color: var(--danger); }
+    .tag-media { background: var(--warning-lt); color: var(--warning); }
+    .tag-baixa { background: var(--success-lt); color: var(--success); }
+
+    .tarefa-acoes { display: flex; gap: 6px; flex-shrink: 0; }
+    .acao-btn {
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+      width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .acao-btn:hover        { background: var(--white); color: var(--text); }
+    .acao-btn.btn-del:hover { background: var(--danger-lt); color: var(--danger); border-color: var(--danger); }
+
+    .status-select {
+      font-family: var(--sans); font-size: 11px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--muted); padding: 2px 4px; cursor: pointer;
+    }
+
+    /* ── Vazio ── */
+    .vazio { text-align: center; padding: 56px 0; color: var(--muted); }
+    .vazio-icone { font-size: 36px; margin-bottom: 10px; }
+
+    /* ── Modal ── */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 200; align-items: center; justify-content: center; }
+    .overlay.aberto { display: flex; }
+    .modal {
+      background: var(--white); border-radius: 12px; padding: 28px;
+      width: 100%; max-width: 440px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.15);
+      animation: mEntrar .2s ease;
+    }
+    @keyframes mEntrar { from { opacity:0; transform:scale(.97); } to { opacity:1; transform:scale(1); } }
+    .modal h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+
+    .campo { margin-bottom: 14px; }
+    .campo label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+    .campo input, .campo textarea, .campo select {
+      width: 100%; border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: var(--sans); font-size: 14px; padding: 9px 12px;
+      color: var(--text); background: var(--white); outline: none;
+      transition: border-color .15s; resize: none;
+    }
+    .campo input:focus, .campo textarea:focus, .campo select:focus { border-color: var(--accent); }
+
+    .modal-rodape { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+    .btn-sec {
+      font-family: var(--sans); font-size: 13px; font-weight: 500;
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+      padding: 8px 16px; border-radius: var(--radius); cursor: pointer; transition: all .15s;
+    }
+    .btn-sec:hover { color: var(--text); }
+    .btn-pri {
+      font-family: var(--sans); font-size: 13px; font-weight: 600;
+      background: var(--accent); color: #fff; border: none;
+      padding: 8px 20px; border-radius: var(--radius); cursor: pointer; transition: opacity .15s;
+    }
+    .btn-pri:hover { opacity: .85; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--text); color: #fff;
+      font-size: 13px; font-weight: 500; padding: 10px 20px;
+      border-radius: 20px; z-index: 300; opacity: 0;
+      transition: all .2s ease; pointer-events: none; white-space: nowrap;
+    }
+    .toast.visivel { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.sucesso { background: var(--success); }
+    .toast.erro    { background: var(--danger); }
+
+    @media (max-width: 580px) {
+      .resumo { grid-template-columns: repeat(2,1fr); }
+      header  { padding: 0 16px; }
+      main    { padding: 16px; }
+      .tarefa-desc { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TaskFlow <span>Gerenciador de Tarefas</span></div>
+  <button class="btn-header" onclick="abrirModal()">+ Nova tarefa</button>
+</header>
+
+<main>
+  <div class="resumo">
+    <div class="resumo-card">
+      <div class="r-label">Total</div>
+      <div class="r-num" id="r-total">0</div>
+    </div>
+    <div class="resumo-card r-and">
+      <div class="r-label">Em andamento</div>
+      <div class="r-num" id="r-and">0</div>
+    </div>
+    <div class="resumo-card r-fin">
+      <div class="r-label">Finalizadas</div>
+      <div class="r-num" id="r-fin">0</div>
+    </div>
+    <div class="resumo-card r-alta">
+      <div class="r-label">Alta prioridade</div>
+      <div class="r-num" id="r-alta">0</div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <span class="painel-label">Status:</span>
+    <button class="chip ativo" data-filtro="todos">Todas</button>
+    <button class="chip" data-filtro="aberta">Abertas</button>
+    <button class="chip" data-filtro="em_andamento">Em andamento</button>
+    <button class="chip" data-filtro="finalizada">Finalizadas</button>
+    <span class="painel-label" style="margin-left:8px">Prioridade:</span>
+    <button class="chip c-alta"  data-prior="alta">Alta</button>
+    <button class="chip c-media" data-prior="media">Média</button>
+    <button class="chip c-baixa" data-prior="baixa">Baixa</button>
+  </div>
+
+  <div id="lista"></div>
+</main>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="fecharSeForaModal(event)">
+  <div class="modal">
+    <h2 id="modal-titulo">Nova tarefa</h2>
+    <input type="hidden" id="eid"/>
+    <div class="campo">
+      <label>Título *</label>
+      <input type="text" id="f-titulo" placeholder="Ex: Revisar planilha de rotas"/>
+    </div>
+    <div class="campo">
+      <label>Descrição</label>
+      <textarea id="f-desc" rows="2" placeholder="Detalhes adicionais..."></textarea>
+    </div>
+    <div class="campo">
+      <label>Status</label>
+      <select id="f-status">
+        <option value="aberta">Aberta</option>
+        <option value="em_andamento">Em andamento</option>
+        <option value="finalizada">Finalizada</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Prioridade</label>
+      <select id="f-prior">
+        <option value="baixa">Baixa</option>
+        <option value="media" selected>Média</option>
+        <option value="alta">Alta</option>
+      </select>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn-sec" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-pri" onclick="salvar()">Salvar tarefa</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = '/tarefas';
+  let todasTarefas = [];
+  let filtroStatus = 'todos';
+  let filtroPrior  = null;
+
+  async function carregar() {
+    try {
+      const res  = await fetch(API);
+      const json = await res.json();
+      todasTarefas = json.tarefas || [];
+      atualizarResumo();
+      renderizar();
+    } catch { toast('Erro ao carregar tarefas', 'erro'); }
+  }
+
+  function atualizarResumo() {
+    document.getElementById('r-total').textContent = todasTarefas.length;
+    document.getElementById('r-and').textContent   = todasTarefas.filter(t => t.status === 'em_andamento').length;
+    document.getElementById('r-fin').textContent   = todasTarefas.filter(t => t.status === 'finalizada').length;
+    document.getElementById('r-alta').textContent  = todasTarefas.filter(t => t.prioridade === 'alta').length;
+  }
+
+  function renderizar() {
+    let lista = [...todasTarefas];
+    if (filtroStatus !== 'todos') lista = lista.filter(t => t.status === filtroStatus);
+    if (filtroPrior)              lista = lista.filter(t => t.prioridade === filtroPrior);
+
+    const el = document.getElementById('lista');
+    if (!lista.length) {
+      el.innerHTML = `<div class="vazio"><div class="vazio-icone">📋</div><p>Nenhuma tarefa encontrada.</p></div>`;
+      return;
+    }
+    el.innerHTML = lista.map(t => `
+      <div class="tarefa-card p-${t.prioridade} ${t.status === 'finalizada' ? 'finalizada' : ''}">
+        <div class="tarefa-corpo">
+          <div class="tarefa-titulo">${esc(t.titulo)}</div>
+          <div class="tarefa-sub">
+            <span class="tag tag-${t.status}">${labelStatus(t.status)}</span>
+            <span class="tag tag-${t.prioridade}">${t.prioridade}</span>
+            ${t.descricao ? `<span class="tarefa-desc">${esc(t.descricao)}</span>` : ''}
+          </div>
+        </div>
+        <div class="tarefa-acoes">
+          <select class="status-select" onchange="mudarStatus(${t.id}, this.value)">
+            <option value="aberta"       ${t.status==='aberta'?'selected':''}>Aberta</option>
+            <option value="em_andamento" ${t.status==='em_andamento'?'selected':''}>Em andamento</option>
+            <option value="finalizada"   ${t.status==='finalizada'?'selected':''}>Finalizada</option>
+          </select>
+          <button class="acao-btn" onclick="editarTarefa(${t.id})" title="Editar">✎</button>
+          <button class="acao-btn btn-del" onclick="excluirTarefa(${t.id})" title="Excluir">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function abrirModal(tarefa = null) {
+    document.getElementById('overlay').classList.add('aberto');
+    document.getElementById('modal-titulo').textContent = tarefa ? 'Editar tarefa' : 'Nova tarefa';
+    document.getElementById('eid').value      = tarefa ? tarefa.id : '';
+    document.getElementById('f-titulo').value = tarefa ? tarefa.titulo : '';
+    document.getElementById('f-desc').value   = tarefa ? tarefa.descricao : '';
+    document.getElementById('f-status').value = tarefa ? tarefa.status : 'aberta';
+    document.getElementById('f-prior').value  = tarefa ? tarefa.prioridade : 'media';
+    document.getElementById('f-titulo').focus();
+  }
+
+  function fecharModal() { document.getElementById('overlay').classList.remove('aberto'); }
+  function fecharSeForaModal(e) { if (e.target === document.getElementById('overlay')) fecharModal(); }
+
+  async function salvar() {
+    const id     = document.getElementById('eid').value;
+    const titulo = document.getElementById('f-titulo').value.trim();
+    if (!titulo) { toast('Título obrigatório', 'erro'); return; }
+
+    const corpo = {
+      titulo,
+      descricao:  document.getElementById('f-desc').value.trim(),
+      status:     document.getElementById('f-status').value,
+      prioridade: document.getElementById('f-prior').value,
+    };
+
+    try {
+      const res = await fetch(id ? `${API}/${id}` : API, {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo),
+      });
+      if (!res.ok) throw new Error();
+      fecharModal();
+      toast(id ? 'Tarefa atualizada!' : 'Tarefa criada!', 'sucesso');
+      carregar();
+    } catch { toast('Erro ao salvar', 'erro'); }
+  }
+
+  function editarTarefa(id) {
+    const t = todasTarefas.find(t => t.id === id);
+    if (t) abrirModal(t);
+  }
+
+  async function mudarStatus(id, status) {
+    try {
+      await fetch(`${API}/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      carregar();
+    } catch { toast('Erro ao alterar status', 'erro'); }
+  }
+
+  async function excluirTarefa(id) {
+    if (!confirm('Excluir esta tarefa?')) return;
+    try {
+      await fetch(`${API}/${id}`, { method: 'DELETE' });
+      toast('Tarefa excluída.', 'sucesso');
+      carregar();
+    } catch { toast('Erro ao excluir', 'erro'); }
+  }
+
+  document.querySelectorAll('[data-filtro]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filtro]').forEach(b => b.classList.remove('ativo'));
+      btn.classList.add('ativo');
+      filtroStatus = btn.dataset.filtro;
+      filtroPrior  = null;
+      document.querySelectorAll('[data-prior]').forEach(b => b.classList.remove('ativo'));
+      renderizar();
+    });
+  });
+
+  document.querySelectorAll('[data-prior]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const jaAtivo = btn.classList.contains('ativo');
+      document.querySelectorAll('[data-prior]').forEach(b => b.classList.remove('ativo'));
+      filtroPrior = jaAtivo ? null : btn.dataset.prior;
+      if (!jaAtivo) btn.classList.add('ativo');
+      renderizar();
+    });
+  });
+
+  function labelStatus(s) {
+    return { aberta: 'aberta', em_andamento: 'em andamento', finalizada: 'finalizada' }[s] || s;
+  }
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  let timerToast;
+  function toast(msg, tipo = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast visivel ${tipo}`;
+    clearTimeout(timerToast);
+    timerToast = setTimeout(() => el.classList.remove('visivel'), 2800);
+  }
+
+  carregar();
+</script>
+</body>
+</html>

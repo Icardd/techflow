@@ -1,0 +1,33 @@
+# .github/workflows/ci.yml
+# Pipeline de integração contínua do TaskFlow
+
+name: CI - Testes Automatizados
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  testes:
+    name: Executar Testes com Jest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Rodar testes
+        run: npm test
+        env:
+          NODE_ENV: test
