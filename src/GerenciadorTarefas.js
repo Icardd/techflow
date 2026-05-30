@@ -102,3 +102,4 @@ class GerenciadorTarefas {
 // Exporta instância única para toda a aplicação
 module.exports = new GerenciadorTarefas();
 // gerenciador
+// filtro prioridade
